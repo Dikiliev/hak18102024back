@@ -1,5 +1,7 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from .models import ApplicationType, Application
 from .serializers import ApplicationTypeSerializer, ApplicationSerializer
@@ -19,6 +21,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         """Возвращаем только те заявления, которые принадлежат текущему пользователю."""
@@ -28,7 +31,6 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return Application.objects.filter(student=user)
 
     def create(self, request, *args, **kwargs):
-        # Логика для создания заявления
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -36,6 +38,54 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
-        # Автоматически добавляем текущего пользователя и тип заявления
+        sent_document = self.request.FILES.get('sent_document')
         application_type = ApplicationType.objects.get(id=self.request.data.get('application_type'))
-        serializer.save(student=self.request.user, application_type=application_type)
+
+        files_field = dict()
+        for file in self.request.FILES:
+            files_field[file] = self.request.FILES.get(file)
+
+        serializer.save(
+            student=self.request.user,
+            application_type=application_type,
+            sent_document=sent_document,
+            files_field=files_field
+        )
+
+
+class ProrectorApplicationListViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Application.objects.filter(status__in=['created', 'in_progress', 'under_review'])
+    serializer_class = ApplicationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Возвращает все заявления в статусе, которые проректор может обработать."""
+        return self.queryset.order_by('-submission_date')
+
+
+class ProrectorApplicationActionViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def sign(self, request, pk=None):
+        """Подписание заявления"""
+        application = get_object_or_404(Application, pk=pk)
+        if application.status != 'in_progress':
+            return Response({"error": "Неверный статус заявления"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Здесь логика для подписания заявления
+        application.status = 'completed'
+        application.save()
+
+        return Response({"message": "Заявление подписано"}, status=status.HTTP_200_OK)
+
+    def reject(self, request, pk=None):
+        """Отклонение заявления"""
+        application = get_object_or_404(Application, pk=pk)
+        if application.status != 'under_review':
+            return Response({"error": "Неверный статус заявления"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Логика для отклонения заявления
+        application.status = 'rejected'
+        application.save()
+
+        return Response({"message": "Заявление отклонено"}, status=status.HTTP_200_OK)

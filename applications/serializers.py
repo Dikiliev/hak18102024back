@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Application, ApplicationType, ApplicationField, ApplicationComment
+from django.core.files.storage import default_storage
 
 
 class ApplicationFieldSerializer(serializers.ModelSerializer):
@@ -24,7 +25,7 @@ class ApplicationTypeLiteSerializer(serializers.ModelSerializer):
 
 class ApplicationSerializer(serializers.ModelSerializer):
     student = serializers.ReadOnlyField(source='student.username')
-    application_type = ApplicationTypeLiteSerializer(read_only=True)  # Используем вложенный сериализатор для получения name
+    application_type = ApplicationTypeLiteSerializer(read_only=True)
     fields_data = serializers.JSONField()  # Поле для хранения произвольных данных пользователя
 
     sent_document = serializers.FileField(required=False, allow_null=True)
@@ -40,7 +41,6 @@ class ApplicationSerializer(serializers.ModelSerializer):
             'submission_date', 'updated_at'
         ]
 
-
     def create(self, validated_data):
         user = self.context['request'].user
         application_type = validated_data.get('application_type')
@@ -55,4 +55,19 @@ class ApplicationSerializer(serializers.ModelSerializer):
             student_signature=validated_data.get('student_signature'),
             status=Application.Status.CREATED
         )
+
+        # Сохраняем загруженные файлы и добавляем их ссылки в fields_data
+        files = self.context['request'].FILES
+        file_links = {}
+
+        for field_name, file in files.items():
+            file_path = default_storage.save(f'uploads/{file.name}', file)  # Сохраняем файл
+            file_url = default_storage.url(file_path)  # Получаем URL сохраненного файла
+            file_links[field_name] = file_url  # Добавляем ссылку в словарь
+
+        # Обновляем fields_data с ссылками на файлы
+        application.fields_data.update(file_links)
+        application.save()
+
         return application
+

@@ -38,6 +38,10 @@ class ApplicationComment(models.Model):
     text = models.TextField()
 
 
+class Document(models.Model):
+    name = models.CharField(max_length=255)
+    value = models.FileField(upload_to='documents/', validators=[FileExtensionValidator(['pdf', 'docx', 'doc'])])
+
 class Application(models.Model):
     class Status(models.TextChoices):
         CREATED = 'created', 'Создано'
