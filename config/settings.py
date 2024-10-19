@@ -13,7 +13,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-^=7psbbu(hs&9$i@b#fd7c3=b&@es&5q=bucg*42(x6#l%p3g*'
 
-DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
+DEBUG = True
+
 
 ALLOWED_HOSTS = ['estechpc.ru', 'localhost', 'http://localhost:3000', 'http://localhost:5173',]
 
@@ -57,8 +58,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'config.pagination.CustomPageNumberPagination',
-    'PAGE_SIZE': 12
+    # 'DEFAULT_PAGINATION_CLASS': 'config.pagination.CustomPageNumberPagination',
+    # 'PAGE_SIZE': 12
 }
 
 

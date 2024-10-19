@@ -53,8 +53,6 @@ class Application(models.Model):
         default=Status.CREATED
     )
 
-    data = models.JSONField(default=dict)
-
     sent_document = models.FileField(
         upload_to='applications/send_docs/',
         blank=True, null=True,
@@ -79,8 +77,7 @@ class Application(models.Model):
     submission_date = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Динамически добавляем поля, которые должны быть заполнены пользователем в зависимости от типа заявления
-    fields_data = models.JSONField()  # Храним заполненные данные (поля/значения) в формате JSON
+    fields_data = models.JSONField(default=dict)
 
     def __str__(self):
         return f'{self.application_type.name} - {self.student.username}'

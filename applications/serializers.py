@@ -1,62 +1,58 @@
 from rest_framework import serializers
 from .models import Application, ApplicationType, ApplicationField, ApplicationComment
-from users.models import User
-
-class ApplicationTypeSerializer(serializers.ModelSerializer):
-    fields = serializers.SerializerMethodField(method_name='get_application_fields')  # Используем метод с новым именем
-
-    class Meta:
-        model = ApplicationType
-        fields = ['id', 'name', 'description', 'fields']
-
-    def get_application_fields(self, obj):
-        """Возвращаем связанные поля"""
-        fields = obj.fields.all()
-        return ApplicationFieldSerializer(fields, many=True).data
 
 
 class ApplicationFieldSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicationField
-        fields = ['id', 'name', 'field_type', 'is_required', 'template']
+        fields = ['id', 'name', 'field_type', 'is_required', 'template', 'example']
 
 
-class ApplicationCommentSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
+class ApplicationTypeSerializer(serializers.ModelSerializer):
+    fields = ApplicationFieldSerializer(many=True)  # Сериализуем связанные поля
 
     class Meta:
-        model = ApplicationComment
-        fields = ['id', 'user', 'text']
+        model = ApplicationType
+        fields = ['id', 'name', 'description', 'fields']
+
+
+class ApplicationTypeLiteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicationType
+        fields = ['id', 'name']
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
     student = serializers.ReadOnlyField(source='student.username')
-    application_type = ApplicationTypeSerializer(read_only=True)
-    fields = ApplicationFieldSerializer(many=True, source='application_type.fields', read_only=True)
-    reviewer_comment = ApplicationCommentSerializer(read_only=True, allow_null=True)
-    prorector_comment = ApplicationCommentSerializer(read_only=True, allow_null=True)
-    data = serializers.JSONField()  # Поле для хранения пользовательских данных
+    application_type = ApplicationTypeLiteSerializer(read_only=True)  # Используем вложенный сериализатор для получения name
+    fields_data = serializers.JSONField()  # Поле для хранения произвольных данных пользователя
+
+    sent_document = serializers.FileField(required=False, allow_null=True)
+    ready_document = serializers.FileField(required=False, allow_null=True)
+    student_signature = serializers.FileField(required=False, allow_null=True)
 
     class Meta:
         model = Application
         fields = [
-            'id', 'student', 'application_type', 'status', 'fields', 'data',
+            'id', 'student', 'application_type', 'status', 'fields_data',
             'sent_document', 'ready_document', 'student_signature',
-            'reviewer_comment', 'prorector_comment', 'submission_date', 'updated_at'
+            'reviewer_comment', 'prorector_comment',
+            'submission_date', 'updated_at'
         ]
 
-    def create(self, validated_data):
-        student = self.context['request'].user
-        application_type = self.context['application_type']  # Получаем тип из контекста
-        data = validated_data.get('data', {})
-        sent_document = validated_data.get('sent_document', None)
-        student_signature = validated_data.get('student_signature', None)
 
-        return Application.objects.create(
-            student=student,
+    def create(self, validated_data):
+        user = self.context['request'].user
+        application_type = validated_data.get('application_type')
+        fields_data = validated_data.get('fields_data', {})
+
+        # Сохраняем заявление
+        application = Application.objects.create(
+            student=user,
             application_type=application_type,
-            data=data,
-            sent_document=sent_document,
-            student_signature=student_signature,
+            fields_data=fields_data,
+            sent_document=validated_data.get('sent_document'),
+            student_signature=validated_data.get('student_signature'),
             status=Application.Status.CREATED
         )
+        return application
