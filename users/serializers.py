@@ -54,13 +54,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'avatar', 'phone_number']
+        fields = ['username', 'first_name', 'last_name', 'avatar', 'phone_number', 'signature']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'phone_number', 'avatar']
+        fields = ['username', 'first_name', 'last_name', 'phone_number', 'avatar', 'signature']
 
     def validate_username(self, value):
         if User.objects.exclude(pk=self.instance.pk).filter(username=value).exists():

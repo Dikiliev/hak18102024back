@@ -37,10 +37,17 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser]  # Поддержка загрузки файлов
 
     def get_object(self):
         return self.request.user
+
+    def perform_update(self, serializer):
+        signature = self.request.data.get('signature', None)
+        if signature:
+            serializer.save(signature=signature)
+        else:
+            serializer.save()
 
 
 @api_view(['GET'])

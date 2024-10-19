@@ -16,5 +16,7 @@ class User(AbstractUser):
         default=Roles.STUDENT
     )
 
+    signature = models.TextField(null=True, blank=True)
+
     def __str__(self):
         return self.username
