@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from users.models import User
+from utils import send_status_change_email
 from .models import ApplicationType, Application, ApplicationComment
 from .serializers import ApplicationTypeSerializer, ApplicationSerializer
 
@@ -45,24 +46,23 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         application.status = new_status
         application.save()
 
+        send_status_change_email(application.student.email, application, new_status)
+
         serializer = self.get_serializer(application)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated],
             parser_classes=[MultiPartParser, FormParser])
     def accept(self, request, pk=None):
-        print('acceptttt')
         application = self.get_object()
-        print('acceptttt gett1')
 
         user = request.user
-
-        print('acceptttt gett')
 
         application.status = Application.Status.IN_PROGRESS
         application.save()
 
-        print('acceptttt save')
+        send_status_change_email(application.student.email, application, application.get_status_display())
+
         serializer = self.get_serializer(application)
         return Response(serializer.data)
 
@@ -82,6 +82,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         application.status = Application.Status.REJECTED
         application.save()
 
+        send_status_change_email(application.student.email, application, application.get_status_display())
+
         serializer = self.get_serializer(application)
         return Response(serializer.data)
 
@@ -97,6 +99,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
         application.sent_document = sent_document
         application.save()
+
+        send_status_change_email(application.student.email, application, application.get_status_display())
 
         serializer = self.get_serializer(application)
         return Response(serializer.data)
@@ -114,6 +118,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         application.ready_document = ready_document
         application.status = Application.Status.COMPLETED
         application.save()
+
+        send_status_change_email(application.student.email, application, application.get_status_display())
 
         serializer = self.get_serializer(application)
         return Response(serializer.data)
