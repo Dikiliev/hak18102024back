@@ -24,6 +24,8 @@ if DEBUG:
 AUTH_USER_MODEL = 'users.User'
 
 INSTALLED_APPS = [
+    'jazzmin',
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
