@@ -48,6 +48,7 @@ class Application(models.Model):
         UNDER_REVIEW = 'under_review', 'Проверяется'
         IN_PROGRESS = 'in_progress', 'В процессе'
         COMPLETED = 'completed', 'Готово'
+        REJECTED = 'rejected', 'Отклонено'
 
     student = models.ForeignKey(User, on_delete=models.CASCADE)
     application_type = models.ForeignKey(ApplicationType, on_delete=models.CASCADE)

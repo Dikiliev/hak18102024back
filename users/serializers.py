@@ -14,6 +14,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add custom claims
         token['username'] = user.username
         token['email'] = user.email
+        token['role'] = user.role
         # ...
 
         return token
@@ -54,13 +55,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'avatar', 'phone_number', 'signature']
+        fields = ['username', 'role', 'first_name', 'last_name', 'avatar', 'phone_number', 'signature']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    role = serializers.CharField(source='get_role_display', read_only=True)
+
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'phone_number', 'avatar', 'signature']
+        fields = ['username', 'first_name', 'last_name', 'phone_number', 'avatar', 'signature', 'role']
 
     def validate_username(self, value):
         if User.objects.exclude(pk=self.instance.pk).filter(username=value).exists():
