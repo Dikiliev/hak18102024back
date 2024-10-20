@@ -28,18 +28,28 @@ class ApplicationSerializer(serializers.ModelSerializer):
     application_type = ApplicationTypeLiteSerializer(read_only=True)
     fields_data = serializers.JSONField()  # Поле для хранения произвольных данных пользователя
 
+    example_document = serializers.FileField(required=False, allow_null=True)
     sent_document = serializers.FileField(required=False, allow_null=True)
     ready_document = serializers.FileField(required=False, allow_null=True)
     student_signature = serializers.FileField(required=False, allow_null=True)
+
+    status = serializers.ChoiceField(choices=Application.Status.choices, required=False)
 
     class Meta:
         model = Application
         fields = [
             'id', 'student', 'application_type', 'status', 'fields_data',
-            'sent_document', 'ready_document', 'student_signature',
+            'example_document', 'sent_document', 'ready_document', 'student_signature',
             'reviewer_comment', 'prorector_comment',
             'submission_date', 'updated_at'
         ]
+        read_only_fields = ['student', 'application_type', 'submission_date', 'updated_at']
+
+    def update(self, instance, validated_data):
+        # Проверка прав доступа может быть реализована здесь или во вьюхе
+        instance.status = validated_data.get('status', instance.status)
+        instance.save()
+        return instance
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -53,7 +63,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
             fields_data=fields_data,
             sent_document=validated_data.get('sent_document'),
             student_signature=validated_data.get('student_signature'),
-            status=Application.Status.CREATED
+            status=Application.Status.UNDER_REVIEW
         )
 
         # Сохраняем загруженные файлы и добавляем их ссылки в fields_data

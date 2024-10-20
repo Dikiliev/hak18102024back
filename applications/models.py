@@ -46,7 +46,7 @@ class Application(models.Model):
     class Status(models.TextChoices):
         CREATED = 'created', 'Создано'
         UNDER_REVIEW = 'under_review', 'Проверяется'
-        IN_PROGRESS = 'in_progress', 'В процессе'
+        IN_PROGRESS = 'in_progress', 'Отправлен на подписание'
         COMPLETED = 'completed', 'Готово'
         REJECTED = 'rejected', 'Отклонено'
 
@@ -55,7 +55,13 @@ class Application(models.Model):
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
-        default=Status.CREATED
+        default=Status.UNDER_REVIEW
+    )
+
+    example_document = models.FileField(
+        upload_to='applications/example_docs/',
+        blank=True, null=True,
+        validators=[FileExtensionValidator(['pdf', 'docx', 'doc'])]
     )
 
     sent_document = models.FileField(
