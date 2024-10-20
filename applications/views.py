@@ -28,7 +28,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_staff:
             return Application.objects.all()  # Администраторы видят все заявления
-        return Application.objects.filter(student=user)
+        return Application.objects.filter(student=user).order_by('-submission_date')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
